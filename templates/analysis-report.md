@@ -16,13 +16,14 @@
 - Price Action atual:
 
 ## 3. Decisão
-**Cenário principal:** COMPRA / VENDA / AGUARDAR
+**Cenário principal:** COMPRA / VENDA / AGUARDAR  
+**Fonte:** local_microstructure / contexto / none
 
-- Gatilho de ativação:
+- Gatilho de ativação (local):
 - Entrada (imediata ou condicionada):
-- Stop:
-- TP1:
-- TP2:
+- Stop (baseado em estrutura local):
+- TP1 / TP2:
+- Distância em pips (quando aplicável):
 - Risco/retorno bruto:
 - Invalidação:
 

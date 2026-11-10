@@ -2,7 +2,7 @@
 
 Sistema de referência para a IA analisar screenshots de gráficos Forex com Price Action, estrutura de mercado, cenários operacionais, horizonte por timeframe e validação histórica.
 
-> **Escopo desta versão:** documentação técnica, regras conceituais, contrato de análise, esquema de dados e plano de validação. Este repositório não é, por si só, um robô operacional nem um sistema com taxa de acerto comprovada.
+> **Escopo desta versão (v0.3):** documentação técnica, regras conceituais, contrato de análise, esquema de dados, plano de validação e motor Python com priorização de microestrutura local próxima ao preço atual. Este repositório não é, por si só, um robô operacional nem um sistema com taxa de acerto comprovada.
 
 ## Objetivo
 

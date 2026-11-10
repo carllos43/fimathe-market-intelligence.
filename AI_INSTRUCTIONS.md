@@ -19,27 +19,31 @@ Antes de analisar um gráfico, consulte este arquivo e os documentos relevantes 
 Siga esta ordem:
 1. Validar legibilidade e identificar instrumento/timeframe.
 2. Delimitar o contexto visível e o número aproximado de candles analisáveis.
-3. Classificar regime: alta, baixa, lateral, transição ou indefinido.
-4. Mapear swings, HH/HL/LH/LL, BOS e CHoCH. Diferenciar rompimento por fechamento de simples pavio.
-5. Avaliar LTA/LTB, canal, suporte/resistência, oferta/demanda e liquidez quando houver pontos suficientes.
-6. Ler candles e Price Action no contexto: impulso, correção, rejeição, engolfo, inside bar, rompimento, reteste, sweep e falha de rompimento. Não operar apenas por nome de padrão.
-7. Verificar alinhamento multi-timeframe somente se outros períodos estiverem visíveis na imagem ou forem fornecidos em imagens separadas. Não alegar que verificou H1/H4 se recebeu apenas M15.
-8. Construir cenários de compra e venda, incluindo espera. Comparar qualidade, distância até a invalidação, espaço até o alvo e risco/retorno.
-9. Escolher um cenário principal apenas se houver gatilho objetivo. Caso contrário, a melhor decisão é aguardar.
-10. Definir entrada, stop, alvos e horizonte conforme a escala e o timeframe. Separar preço de entrada imediata de entrada condicionada.
-11. Avaliar pontuação de confluência e consultar o histórico do repositório, se houver registros comparáveis rotulados.
-12. Entregar o relatório no formato definido em `templates/analysis-report.md`.
+3. **Priorizar microestrutura local**: analisar primeiro os candles recentes (janela configurável, tipicamente últimos 30–40 candles) para identificar swings locais, suportes/resistências próximas, rejeições, rompimentos e retestes próximos ao preço atual.
+4. Separar explicitamente:
+   - Estrutura maior (contexto): range amplo, tendência de médio prazo, extremos distantes.
+   - Estrutura menor (entrada): pivôs e zonas locais próximas ao preço atual.
+5. Não utilizar automaticamente os extremos de um range amplo como entrada operacional. Aplicar filtro de distância (máximo em ATR ou percentual do range recente). Se o gatilho estiver muito distante, descartá-lo e reanalisar apenas a janela local.
+6. Classificar regime de contexto (alta/baixa/lateral/transição) e, separadamente, o regime local.
+7. Mapear swings locais (HH/HL/LH/LL recentes), BOS/CHoCH locais. Diferenciar rompimento por fechamento de simples pavio.
+8. Avaliar LTA/LTB, canais e zonas apenas quando ancorados na janela relevante (local para entrada, contexto para viés).
+9. Ler Price Action recente: impulso, correção, rejeição, engolfo, inside bar, rompimento, reteste, sweep. Não operar apenas por nome de padrão.
+10. Verificar alinhamento multi-timeframe somente se outros períodos estiverem visíveis. Não alegar que verificou H1/H4 se recebeu apenas M15.
+11. Construir cenários de compra e venda locais (próximos ao preço), mais o cenário de espera. Comparar confirmação por fechamento, distância do stop, potencial de alvo e R:R. Escolher a configuração com melhor equilíbrio.
+12. Calcular entrada, stop, TP1, TP2, distância em pips (quando o instrumento permitir), R:R e horizonte conforme o timeframe e a estrutura local.
+13. Escolher cenário principal apenas se houver gatilho objetivo local e dentro do filtro de distância. Caso contrário, a melhor decisão é aguardar.
+14. Definir horizonte operacional pelo timeframe (docs/14). Não prolongar automaticamente.
+15. Avaliar pontuação de confluência técnica. Probabilidade histórica somente com operações comparáveis validadas (docs/15). Caso contrário, informar “ESTATÍSTICA INDISPONÍVEL” e apresentar apenas confiança técnica qualitativa.
 
 ## Seleção da melhor entrada
-A melhor entrada não é necessariamente a mais próxima do preço atual. Priorize:
-- estrutura coerente com a direção;
+Priorize sempre:
+- oportunidades próximas ao preço atual (microestrutura local);
 - gatilho observável e preferencialmente confirmado no fechamento;
-- entrada próxima de zona relevante, sem perseguir candle esticado;
-- stop em ponto de invalidação estrutural, não em distância arbitrária;
-- alvo com espaço livre e risco/retorno aceitável;
-- ausência de conflito forte entre estrutura e gatilho.
+- stop em ponto de invalidação local (não extremo distante);
+- alvo com espaço livre e R:R mínimo configurado;
+- ausência de conflito forte entre estrutura local e gatilho.
 
-Se os cenários de compra e venda forem fracos, indique `AGUARDAR`. Não force uma operação para preencher o relatório.
+Se não existir entrada válida próxima, indique AGUARDAR e descreva exatamente o que precisa acontecer (fechamento, reteste, formação de pivô local) para ativar uma configuração.
 
 ## Horizonte por timeframe
 Use `get_horizon(timeframe)` ou a tabela em `docs/14-horizonte-por-timeframe.md`. O intervalo indica quando reavaliar e o horizonte operacional planejado em candles. Não promete que o alvo será atingido nesse período. Reavalie antes se houver invalidação, mudança de estrutura ou perda do gatilho.

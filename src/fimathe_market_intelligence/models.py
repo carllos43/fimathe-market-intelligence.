@@ -20,4 +20,8 @@ class AnalysisConfig:
     stop_buffer_atr: float = 0.20
     min_risk_reward: float = 1.5
     max_horizon_candles: int = 30
-
+    # Priorização de oportunidades locais (próximas ao preço atual)
+    local_lookback_candles: int = 40
+    max_operational_distance_atr: float = 2.5
+    local_pivot_left: int = 2
+    local_pivot_right: int = 2

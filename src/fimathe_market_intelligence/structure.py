@@ -37,3 +37,9 @@ def detect_break_of_structure(candles, highs, lows, atr_value, buffer_atr=0.1):
     if lows and last.close < lows[-1]["price"] - buffer:
         events.append({"type": "BOS", "direction": "bearish", "level": lows[-1]["price"], "confirmed_by_close": True})
     return events
+
+def get_local_window(candles, lookback):
+    """Retorna os candles mais recentes para análise de microestrutura."""
+    if lookback <= 0 or lookback >= len(candles):
+        return candles
+    return candles[-lookback:]

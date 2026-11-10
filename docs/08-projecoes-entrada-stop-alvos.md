@@ -1,5 +1,17 @@
 # 08 — Projeções, entrada, stop e alvos
 
+## Prioridade operacional: oportunidades locais
+
+A partir da versão 0.3, o motor e a IA priorizam configurações próximas ao preço atual:
+
+1. Analisar primeiro a janela recente (microestrutura).
+2. Separar estrutura de contexto (range amplo / tendência maior) da estrutura de entrada (pivôs e zonas locais).
+3. Aplicar filtro de distância operacional (`max_operational_distance_atr`). Se o stop ou gatilho estiver além do limite, o cenário é descartado e a análise é recalculada apenas na janela local.
+4. Não utilizar automaticamente os extremos de um range amplo como entrada.
+5. Calcular entrada, stop, TP1, TP2, distância em pips (quando o instrumento permitir), R:R e horizonte com base na estrutura local e no timeframe.
+6. Comparar compra, venda e espera, escolhendo a configuração com melhor equilíbrio entre confirmação por fechamento, distância do stop e potencial de alvo.
+7. Se não existir entrada válida próxima, retornar AGUARDAR e indicar exatamente o que precisa acontecer.
+
 ## Sempre apresentar cenários condicionais
 
 - Cenário comprador.

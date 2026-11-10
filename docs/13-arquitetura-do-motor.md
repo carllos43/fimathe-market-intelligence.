@@ -30,7 +30,16 @@ Se a imagem não permitir recuperar OHLC com precisão, a IA pode produzir uma l
 Ver `prompts/chart-image-extraction.md`. A camada de visão extrai evidências; não decide sozinha a operação. A decisão estruturada deve ser feita pelo motor e validada por regras.
 
 
-## Camada de IA por imagem (v0.2)
+## Priorização de oportunidades locais (v0.3)
+
+O motor agora separa explicitamente:
+
+- **Contexto maior**: pivôs e tendência calculados sobre todo o histórico fornecido.
+- **Microestrutura local**: pivôs calculados apenas na janela recente (`local_lookback_candles`, padrão 40).
+
+`scenarios.py` constrói primeiro cenários baseados nos pivôs locais próximos ao preço atual e aplica o filtro `max_operational_distance_atr`. Extremos distantes do range amplo não são usados como entrada operacional padrão. O campo `source` nos cenários indica `local_microstructure` ou `none`. O resultado inclui `operational_priority` e `primary_scenario`.
+
+A IA deve seguir a mesma lógica ao interpretar imagens: priorizar candles recentes e não forçar entrada em extremos distantes.
 
 A visão computacional e a interpretação do screenshot pertencem ao modelo de IA que recebe a imagem, não ao motor Python. O contrato de comportamento está em `AI_INSTRUCTIONS.md`; o procedimento está em `prompts/master-chart-analysis.md`; os campos extraídos estão em `schemas/chart-observation.schema.json`. A IA não deve exigir que o usuário transcreva OHLC quando consegue ler o gráfico. O motor Python é uma camada complementar para cálculos numéricos quando OHLC estiver disponível.
 
