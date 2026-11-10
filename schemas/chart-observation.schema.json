@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fimathe Visual Chart Observation",
+  "type": "object",
+  "required": ["instrument", "timeframe", "image_quality", "visible_data", "limitations"],
+  "properties": {
+    "instrument": {"type": ["string", "null"]},
+    "timeframe": {"type": ["string", "null"]},
+    "price_scale": {"type": ["string", "null"]},
+    "current_price": {"type": ["number", "null"]},
+    "visible_candles_estimate": {"type": ["integer", "null"], "minimum": 0},
+    "image_quality": {
+      "type": "object",
+      "required": ["price_axis_readable", "candles_readable", "cropped"],
+      "properties": {
+        "price_axis_readable": {"type": "boolean"},
+        "candles_readable": {"type": "boolean"},
+        "cropped": {"type": "boolean"},
+        "notes": {"type": "string"}
+      }
+    },
+    "visible_data": {
+      "type": "object",
+      "properties": {
+        "trendlines": {"type": "array", "items": {"type": "string"}},
+        "indicators": {"type": "array", "items": {"type": "string"}},
+        "support_resistance": {"type": "array", "items": {"type": "string"}},
+        "volume_visible": {"type": "boolean"}
+      }
+    },
+    "field_confidence": {"type": "object", "additionalProperties": {"enum": ["observed", "estimated", "uncertain", "not_visible"]}},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  }
+}

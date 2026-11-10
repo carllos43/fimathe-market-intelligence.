@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fimathe-market-intelligence"
+version = "0.2.0"
+description = "Image-first Forex market analysis framework and rule-based OHLC engine"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+
+[project.scripts]
+fimathe-analyze = "fimathe_market_intelligence.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

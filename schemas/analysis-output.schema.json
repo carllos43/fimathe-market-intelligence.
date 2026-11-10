@@ -1,0 +1,386 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fimathe Market Intelligence Analysis",
+  "type": "object",
+  "required": [
+    "instrument",
+    "timeframe",
+    "market_regime",
+    "evidence_status",
+    "scenarios",
+    "statistics"
+  ],
+  "properties": {
+    "instrument": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "timeframe": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "chart_timestamp": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "market_regime": {
+      "enum": [
+        "bullish",
+        "bearish",
+        "sideways",
+        "transition",
+        "unknown"
+      ]
+    },
+    "trend": {
+      "enum": [
+        "up",
+        "down",
+        "range",
+        "mixed",
+        "unknown"
+      ]
+    },
+    "evidence_status": {
+      "enum": [
+        "observed",
+        "inferred",
+        "confirmed",
+        "invalidated",
+        "not_evaluable"
+      ]
+    },
+    "structure": {
+      "type": "object",
+      "properties": {
+        "swings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "HH",
+                  "HL",
+                  "LH",
+                  "LL",
+                  "swing_high",
+                  "swing_low"
+                ]
+              },
+              "price": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "confirmed_at": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          }
+        },
+        "bos": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "choch": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "trendlines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "type": {
+                "enum": [
+                  "LTA",
+                  "LTB",
+                  "channel",
+                  "range_boundary"
+                ]
+              },
+              "status": {
+                "enum": [
+                  "active",
+                  "broken",
+                  "unconfirmed",
+                  "invalidated"
+                ]
+              },
+              "points": {
+                "type": "array"
+              }
+            }
+          }
+        }
+      }
+    },
+    "zones": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "enum": [
+              "support",
+              "resistance",
+              "supply",
+              "demand",
+              "liquidity"
+            ]
+          },
+          "low": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "high": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "timeframe": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "scenarios": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "direction",
+          "trigger",
+          "invalidation"
+        ],
+        "properties": {
+          "direction": {
+            "enum": [
+              "buy",
+              "sell",
+              "wait"
+            ]
+          },
+          "trigger": {
+            "type": "string"
+          },
+          "entry": {
+            "type": [
+              "number",
+              "string",
+              "null"
+            ]
+          },
+          "stop": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "take_profit_1": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "take_profit_2": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "risk_reward": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "invalidation": {
+            "type": "string"
+          },
+          "horizon_candles": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "confidence_type": {
+            "enum": [
+              "qualitative",
+              "calibrated_probability",
+              "not_available"
+            ]
+          },
+          "probability": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "entry_type": {
+            "type": "string"
+          },
+          "entry_status": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "required": [
+        "validated",
+        "win_rate",
+        "loss_rate"
+      ],
+      "properties": {
+        "validated": {
+          "type": "boolean"
+        },
+        "win_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "loss_rate": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "sample_size": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "period": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "assets_timeframes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "costs_included": {
+          "type": "boolean"
+        },
+        "methodology": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "horizon": {
+      "type": "object",
+      "properties": {
+        "timeframe": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "min_candles": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "max_candles": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "min_duration": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "max_duration": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      }
+    },
+    "technical_confluence": {
+      "type": "object",
+      "properties": {
+        "score": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "maximum": 100
+        },
+        "label": {
+          "const": "technical_confluence_score_not_win_probability"
+        },
+        "coverage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "warning": {
+          "type": "string"
+        },
+        "factors": {
+          "type": "object"
+        }
+      }
+    }
+  }
+}

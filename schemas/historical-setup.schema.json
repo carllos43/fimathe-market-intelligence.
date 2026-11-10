@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Fimathe Historical Setup Outcome",
+  "type": "object",
+  "required": ["record_id", "instrument", "timeframe", "setup_type", "market_regime", "outcome", "costs_included", "out_of_sample", "rule_version", "closed_at"],
+  "properties": {
+    "record_id": {"type": "string", "minLength": 1},
+    "instrument": {"type": "string", "minLength": 1},
+    "timeframe": {"enum": ["M1", "M5", "M15", "M30", "H1", "H2", "H4", "H8", "D1", "W1"]},
+    "setup_type": {"type": "string", "minLength": 1},
+    "market_regime": {"enum": ["bullish", "bearish", "sideways", "transition"]},
+    "direction": {"enum": ["buy", "sell"]},
+    "outcome": {"enum": ["win", "loss", "breakeven"]},
+    "r_multiple": {"type": ["number", "null"]},
+    "costs_included": {"type": "boolean"},
+    "out_of_sample": {"type": "boolean"},
+    "rule_version": {"type": "string"},
+    "opened_at": {"type": ["string", "null"], "format": "date-time"},
+    "closed_at": {"type": "string", "format": "date-time"},
+    "source": {"type": ["string", "null"]},
+    "notes": {"type": ["string", "null"]}
+  }
+}
