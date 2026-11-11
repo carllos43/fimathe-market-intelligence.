@@ -20,28 +20,44 @@ Serve como base de observação para validação futura (o que foi projetado vs 
 | 3 | ~22:58 09/11 | M15 | 158,054 | AGUARDAR | 158,15 | Teste da resistência local; ainda sem fechamento acima |
 | 4 | ~01:20 10/11 | M15 | 157,995 | AGUARDAR | 158,00 / 157,90 | Rejeição em 158,15; preço testando 158,00 por baixo |
 | 5 | ~08:01 10/11 | M15 | 158,128 | AGUARDAR | 158,15 | Reconquistou 158,00 e testou novamente 158,15 |
+| 6 | ~09:37 10/11 | M15 | 158,188 | COMPRA (gatilho ativado) | 158,15 rompido | Rompimento confirmado; preço testou 158,25 |
+| 7 | ~12:04 10/11 | M15 | 158,630 | Gestão / realização | 158,40 / 158,70 | Extensão forte até ~158,70; cenário se concretizou |
 
-**Status geral no final da sessão registrada:**  
-O preço reconquistou a zona de 158,00 e voltou a testar 158,15.  
-O gatilho de compra (fechamento + reteste acima de 158,15) ainda não havia sido confirmado no último print.
+**Status final da sessão:**  
+O cenário de compra projetado se concretizou.  
+Gatilho (fechamento acima de 158,15) foi ativado, seguido de movimento impulsivo que superou TP1 (158,25) e TP2 (158,40), alcançando ~158,70.
 
 ---
 
-## Condições de entrada/saída vigentes no final da sessão
+## Resultado do setup projetado
 
-### Compra (prioridade se confirmar)
-- **Gatilho:** Fechamento acima de 158,15 + reteste que segure a zona
-- **Entrada:** No reteste (preferencial)
-- **Stop:** Abaixo do último pivô local (região 157,95–158,00)
-- **TP1:** 158,25
-- **TP2:** 158,40
-- **Invalidação:** Fechamento abaixo de 157,90
+| Item | Valor |
+|------|-------|
+| Setup | Compra após rompimento + estrutura de recuperação da liquidez |
+| Gatilho | Fechamento acima de 158,15 |
+| Direção | Compra |
+| Resultado observado | Cenário validado (preço avançou fortemente na direção projetada) |
+| Extensão máxima observada | ~158,70 |
+| Observação | Nenhuma operação real foi executada nesta sessão de chat. Registro serve apenas para validação da leitura estrutural. |
 
-### Venda
-- **Gatilho:** Fechamento abaixo de 157,90
-- **Stop:** Acima de 158,05–158,08
-- **TP1:** 157,75
-- **Invalidação:** Fechamento acima de 158,10
+---
+
+## Condições de entrada/saída (evolução)
+
+### Fase 1 — Aguardar (até ~09:37)
+- Gatilho de compra: Fechamento acima de 158,15 + reteste
+- Stop: abaixo de 157,95–158,00
+- TP1: 158,25 / TP2: 158,40
+
+### Fase 2 — Após rompimento (09:37 em diante)
+- Entrada preferencial: reteste de 158,15–158,18
+- Stop elevado: abaixo de 158,10
+- Alvos: 158,25 → 158,40 → 158,50+
+
+### Fase 3 — Extensão (12:04)
+- Preço atingiu ~158,70
+- Gestão: realizar parciais, stop para 158,25–158,30
+- Nova entrada: evitar perseguir; aguardar reteste de 158,40–158,50
 
 ---
 
@@ -49,42 +65,42 @@ O gatilho de compra (fechamento + reteste acima de 158,15) ainda não havia sido
 
 1. **Varredura de liquidez** clara em torno de 157,67–157,70 (por volta das 18:00 do dia 09/11).
 2. Bounce impulsivo a partir desse low.
-3. Região **158,15** atuou repetidamente como resistência (rejeições observadas).
-4. Zona **158,00** tornou-se pivô de decisão de curto prazo após a rejeição em 158,15.
+3. Região **158,15** atuou como resistência e depois como zona de rompimento.
+4. Zona **158,00** foi pivô de decisão de curto prazo.
 5. Protocolo priorizou microestrutura local e exigiu confirmação por fechamento (não entrou no meio do movimento).
+6. Após o rompimento, o preço respeitou a estrutura e entregou extensão significativa.
 
 ---
 
 ## Arquivos de imagem da sessão (referência)
 
-As imagens originais foram enviadas pelo usuário.  
-Como o push via API aceita apenas texto, as imagens precisam ser adicionadas manualmente na pasta `charts/` se desejado.
-
-| Arquivo local | Momento | TF |
-|---------------|---------|----|
-| IMG_2994.jpg | Início da sessão | M15 |
-| IMG_2995.jpg | Detalhe M1 | M1 |
-| IMG_2997.jpg | Atualização noturna | M15 |
-| IMG_2998.jpg | ~01:20 | M15 |
-| IMG_3004.jpg | ~08:01 | M15 |
+| Arquivo local | Momento | TF | Notas |
+|---------------|---------|----|-------|
+| IMG_2994.jpg | Início da sessão | M15 | Preço ~158,016 |
+| IMG_2995.jpg | Detalhe M1 | M1 | Bounce local |
+| IMG_2997.jpg | Atualização noturna | M15 | Teste de 158,15 |
+| IMG_2998.jpg | ~01:20 | M15 | Rejeição e teste de 158,00 |
+| IMG_3004.jpg | ~08:01 | M15 | Reconquista de 158,00 |
+| IMG_3006.jpg | ~09:37 | M15 | Rompimento de 158,15 |
+| IMG_3007.jpg | ~12:04 | M15 | Extensão até ~158,70 |
 
 Sugestão de pasta no repositório:
 ```
 datasets/sessions/USDJPY_2026-11-09/
-  session_log.md          ← este arquivo
-  observations.jsonl      ← observações estruturadas
-  charts/                 ← (adicionar as imagens manualmente)
+  session_log.md
+  observations.jsonl
+  charts/                 ← (adicionar as imagens manualmente se desejado)
 ```
 
 ---
 
 ## Notas para validação futura
 
-- Nenhuma operação foi aberta nesta sessão (todas as decisões foram AGUARDAR).
-- Portanto **não há outcome win/loss** para registrar em `historical_setups.jsonl` ainda.
-- Quando um setup for ativado e encerrado, registrar conforme `schemas/historical-setup.schema.json`.
-- Manter `costs_included`, `out_of_sample` e `rule_version` preenchidos.
+- O setup projetado foi validado visualmente (direção e extensão).
+- Nenhuma operação real com capital foi registrada nesta sessão.
+- Para fins de estatística histórica formal (`historical_setups.jsonl`), só registrar quando houver operação fechada com custos e outcome real.
+- Este log serve como evidência de que a leitura estrutural + gatilho objetivo produziu o resultado esperado.
 
 ---
 
-*Gerado automaticamente a partir da sessão de chat com a IA seguindo o protocolo do repositório.*
+*Atualizado em 11/11/2026 com o desfecho do movimento.*
