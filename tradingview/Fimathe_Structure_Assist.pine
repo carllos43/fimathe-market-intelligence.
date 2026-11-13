@@ -1,0 +1,240 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © Fimathe Market Intelligence — educacional / assistivo
+// NÃO é robô operacional. Não promete taxa de acerto. Preferir AGUARDAR quando a estrutura local não estiver clara.
+
+//@version=5
+indicator("Fimathe Structure Assist", overlay=true, max_labels_count=50, max_lines_count=50)
+
+//══════════════════════════════════════════════════════════════════════════════
+// INPUTS
+//══════════════════════════════════════════════════════════════════════════════
+grpPivot = "Pivôs / Estrutura"
+leftBars     = input.int(3, "Left bars (pivô)", minval=1, maxval=10, group=grpPivot)
+rightBars    = input.int(3, "Right bars (pivô)", minval=1, maxval=10, group=grpPivot)
+localLookback = input.int(40, "Janela local (candles)", minval=20, maxval=100, group=grpPivot)
+
+grpFilters = "Filtros operacionais"
+atrLen       = input.int(14, "ATR length", minval=5, group=grpFilters)
+maxDistATR   = input.float(2.5, "Distância máx. stop (ATR)", minval=0.5, step=0.1, group=grpFilters)
+minRR        = input.float(1.5, "R:R mínimo", minval=1.0, step=0.1, group=grpFilters)
+stopBufferATR = input.float(0.15, "Buffer do stop (ATR)", minval=0.0, step=0.05, group=grpFilters)
+bosBufferATR  = input.float(0.10, "Buffer BOS (ATR)", minval=0.0, step=0.05, group=grpFilters)
+
+grpMode = "Modo de entrada"
+entryMode = input.string("Ambos", "Modo", options=["Agressivo", "Conservador", "Ambos"], group=grpMode)
+showWait  = input.bool(true, "Mostrar status AGUARDAR", group=grpMode)
+
+grpVisual = "Visual"
+showPivots   = input.bool(true, "Marcar pivôs", group=grpVisual)
+showStructure = input.bool(true, "Labels HH/HL/LH/LL", group=grpVisual)
+showBOS      = input.bool(true, "Marcar BOS", group=grpVisual)
+showLevels   = input.bool(true, "Plotar Entry / Stop / TP", group=grpVisual)
+bullColor    = input.color(color.new(color.teal, 0), "Cor compra", group=grpVisual)
+bearColor    = input.color(color.new(color.red, 0), "Cor venda", group=grpVisual)
+waitColor    = input.color(color.new(color.gray, 0), "Cor aguardar", group=grpVisual)
+
+//══════════════════════════════════════════════════════════════════════════════
+// HORIZONTE POR TIMEFRAME
+//══════════════════════════════════════════════════════════════════════════════
+f_horizon() =>
+    tf = timeframe.period
+    minC = 3
+    maxC = 12
+    if tf == "1"
+        minC := 3
+        maxC := 15
+    else if tf == "5"
+        minC := 3
+        maxC := 16
+    else if tf == "15"
+        minC := 3
+        maxC := 12
+    else if tf == "30"
+        minC := 3
+        maxC := 10
+    else if tf == "60"
+        minC := 2
+        maxC := 12
+    else if tf == "240"
+        minC := 2
+        maxC := 8
+    else if tf == "D" or tf == "1D"
+        minC := 1
+        maxC := 8
+    else if tf == "W" or tf == "1W"
+        minC := 1
+        maxC := 6
+    [minC, maxC]
+
+[hzMin, hzMax] = f_horizon()
+
+atr = ta.atr(atrLen)
+
+//══════════════════════════════════════════════════════════════════════════════
+// PIVÔS (confirmados — sem repaint)
+//══════════════════════════════════════════════════════════════════════════════
+ph = ta.pivothigh(high, leftBars, rightBars)
+pl = ta.pivotlow(low, leftBars, rightBars)
+
+var float lastPH = na
+var float lastPL = na
+var float prevPH = na
+var float prevPL = na
+
+if not na(ph)
+    prevPH := lastPH
+    lastPH := ph
+if not na(pl)
+    prevPL := lastPL
+    lastPL := pl
+
+swingHighLabel = ""
+swingLowLabel  = ""
+if not na(ph) and not na(prevPH)
+    swingHighLabel := ph > prevPH ? "HH" : "LH"
+if not na(pl) and not na(prevPL)
+    swingLowLabel := pl > prevPL ? "HL" : "LL"
+
+if showPivots and not na(ph)
+    label.new(bar_index - rightBars, ph, showStructure ? swingHighLabel : "▲",
+         style=label.style_label_down, color=color.new(color.red, 70),
+         textcolor=color.red, size=size.tiny)
+if showPivots and not na(pl)
+    label.new(bar_index - rightBars, pl, showStructure ? swingLowLabel : "▼",
+         style=label.style_label_up, color=color.new(color.teal, 70),
+         textcolor=color.teal, size=size.tiny)
+
+trendUp   = not na(lastPH) and not na(prevPH) and not na(lastPL) and not na(prevPL) and lastPH > prevPH and lastPL > prevPL
+trendDown = not na(lastPH) and not na(prevPH) and not na(lastPL) and not na(prevPL) and lastPH < prevPH and lastPL < prevPL
+trendName = trendUp ? "ALTA" : trendDown ? "BAIXA" : "LATERAL/TRANSICAO"
+
+bosBuffer = atr * bosBufferATR
+bosBull = not na(lastPH) and close > lastPH + bosBuffer and close[1] <= lastPH + bosBuffer
+bosBear = not na(lastPL) and close < lastPL - bosBuffer and close[1] >= lastPL - bosBuffer
+
+if showBOS and bosBull
+    label.new(bar_index, high, "BOS▲", style=label.style_label_down, color=color.new(bullColor, 30), textcolor=color.white, size=size.small)
+if showBOS and bosBear
+    label.new(bar_index, low, "BOS▼", style=label.style_label_up, color=color.new(bearColor, 30), textcolor=color.white, size=size.small)
+
+plotshape(bosBull, title="BOS Bull", style=shape.triangleup, location=location.belowbar, color=bullColor, size=size.tiny)
+plotshape(bosBear, title="BOS Bear", style=shape.triangledown, location=location.abovebar, color=bearColor, size=size.tiny)
+
+bufferStop = atr * stopBufferATR
+distToLastPL = not na(lastPL) ? math.abs(close - lastPL) : na
+distToLastPH = not na(lastPH) ? math.abs(close - lastPH) : na
+maxDist = atr * maxDistATR
+
+buyStopAggressive = not na(lastPL) ? lastPL - bufferStop : na
+buyEntryAggressive = close
+buyRiskA = not na(buyStopAggressive) ? buyEntryAggressive - buyStopAggressive : na
+buyTP1A = not na(buyRiskA) ? buyEntryAggressive + buyRiskA * 2.0 : na
+buyTP2A = not na(buyRiskA) ? buyEntryAggressive + buyRiskA * 3.0 : na
+buyRRA = not na(buyRiskA) and buyRiskA > 0 ? (buyTP1A - buyEntryAggressive) / buyRiskA : na
+buyValidAggressive = trendUp and not na(lastPL) and close > lastPL and distToLastPL <= maxDist and not na(buyRRA) and buyRRA >= minRR and (bosBull or close > nz(lastPH, close))
+
+buyRetestZone = lastPH
+buyStopConservative = not na(lastPL) ? lastPL - bufferStop : na
+buyEntryConservative = not na(buyRetestZone) ? buyRetestZone : na
+buyRiskC = not na(buyEntryConservative) and not na(buyStopConservative) ? buyEntryConservative - buyStopConservative : na
+buyTP1C = not na(buyRiskC) ? buyEntryConservative + buyRiskC * 2.0 : na
+buyTP2C = not na(buyRiskC) ? buyEntryConservative + buyRiskC * 3.0 : na
+buyRRC = not na(buyRiskC) and buyRiskC > 0 ? (buyTP1C - buyEntryConservative) / buyRiskC : na
+buyValidConservative = trendUp and not na(lastPH) and not na(lastPL) and close <= lastPH * 1.001 and close >= lastPH * 0.997 and distToLastPL <= maxDist * 1.2 and not na(buyRRC) and buyRRC >= minRR
+
+sellStopAggressive = not na(lastPH) ? lastPH + bufferStop : na
+sellEntryAggressive = close
+sellRiskA = not na(sellStopAggressive) ? sellStopAggressive - sellEntryAggressive : na
+sellTP1A = not na(sellRiskA) ? sellEntryAggressive - sellRiskA * 2.0 : na
+sellTP2A = not na(sellRiskA) ? sellEntryAggressive - sellRiskA * 3.0 : na
+sellRRA = not na(sellRiskA) and sellRiskA > 0 ? (sellEntryAggressive - sellTP1A) / sellRiskA : na
+sellValidAggressive = trendDown and not na(lastPH) and close < lastPH and distToLastPH <= maxDist and not na(sellRRA) and sellRRA >= minRR and (bosBear or close < nz(lastPL, close))
+
+sellRetestZone = lastPL
+sellStopConservative = not na(lastPH) ? lastPH + bufferStop : na
+sellEntryConservative = not na(sellRetestZone) ? sellRetestZone : na
+sellRiskC = not na(sellEntryConservative) and not na(sellStopConservative) ? sellStopConservative - sellEntryConservative : na
+sellTP1C = not na(sellRiskC) ? sellEntryConservative - sellRiskC * 2.0 : na
+sellTP2C = not na(sellRiskC) ? sellEntryConservative - sellRiskC * 3.0 : na
+sellRRC = not na(sellRiskC) and sellRiskC > 0 ? (sellEntryConservative - sellTP1C) / sellRiskC : na
+sellValidConservative = trendDown and not na(lastPL) and not na(lastPH) and close >= lastPL * 0.999 and close <= lastPL * 1.003 and distToLastPH <= maxDist * 1.2 and not na(sellRRC) and sellRRC >= minRR
+
+useAgg = entryMode == "Agressivo" or entryMode == "Ambos"
+useCon = entryMode == "Conservador" or entryMode == "Ambos"
+longSignal  = (useAgg and buyValidAggressive) or (useCon and buyValidConservative)
+shortSignal = (useAgg and sellValidAggressive) or (useCon and sellValidConservative)
+longIsConservative = useCon and buyValidConservative
+shortIsConservative = useCon and sellValidConservative
+finalDir = longSignal and not shortSignal ? "COMPRA" : shortSignal and not longSignal ? "VENDA" : "AGUARDAR"
+
+float plotEntry = na
+float plotStop  = na
+float plotTP1   = na
+float plotTP2   = na
+string plotMode = "—"
+float plotRR    = na
+
+if finalDir == "COMPRA"
+    if longIsConservative
+        plotEntry := buyEntryConservative
+        plotStop  := buyStopConservative
+        plotTP1   := buyTP1C
+        plotTP2   := buyTP2C
+        plotMode  := "Conservador"
+        plotRR    := buyRRC
+    else
+        plotEntry := buyEntryAggressive
+        plotStop  := buyStopAggressive
+        plotTP1   := buyTP1A
+        plotTP2   := buyTP2A
+        plotMode  := "Agressivo"
+        plotRR    := buyRRA
+else if finalDir == "VENDA"
+    if shortIsConservative
+        plotEntry := sellEntryConservative
+        plotStop  := sellStopConservative
+        plotTP1   := sellTP1C
+        plotTP2   := sellTP2C
+        plotMode  := "Conservador"
+        plotRR    := sellRRC
+    else
+        plotEntry := sellEntryAggressive
+        plotStop  := sellStopAggressive
+        plotTP1   := sellTP1A
+        plotTP2   := sellTP2A
+        plotMode  := "Agressivo"
+        plotRR    := sellRRA
+
+entryLine = plot(showLevels and finalDir != "AGUARDAR" ? plotEntry : na, "Entry", color=color.new(color.white, 0), linewidth=2, style=plot.style_linebr)
+stopLine  = plot(showLevels and finalDir != "AGUARDAR" ? plotStop  : na, "Stop",  color=color.new(color.red, 0), linewidth=2, style=plot.style_linebr)
+tp1Line   = plot(showLevels and finalDir != "AGUARDAR" ? plotTP1   : na, "TP1",   color=color.new(color.teal, 0), linewidth=2, style=plot.style_linebr)
+tp2Line   = plot(showLevels and finalDir != "AGUARDAR" ? plotTP2   : na, "TP2",   color=color.new(color.green, 0), linewidth=1, style=plot.style_linebr)
+fill(entryLine, stopLine, color=finalDir != "AGUARDAR" ? color.new(color.red, 88) : na, title="Risk zone")
+fill(entryLine, tp1Line,  color=finalDir != "AGUARDAR" ? color.new(color.teal, 88) : na, title="Reward zone")
+
+var table t = table.new(position.top_right, 2, 9, bgcolor=color.new(color.black, 20), border_width=1)
+if barstate.islast
+    table.cell(t, 0, 0, "Fimathe Assist", text_color=color.white, text_size=size.small)
+    table.cell(t, 1, 0, timeframe.period, text_color=color.gray, text_size=size.small)
+    table.cell(t, 0, 1, "Regime", text_color=color.gray, text_size=size.small)
+    table.cell(t, 1, 1, trendName, text_color=trendUp ? bullColor : trendDown ? bearColor : color.orange, text_size=size.small)
+    table.cell(t, 0, 2, "Sinal", text_color=color.gray, text_size=size.small)
+    sigColor = finalDir == "COMPRA" ? bullColor : finalDir == "VENDA" ? bearColor : waitColor
+    table.cell(t, 1, 2, finalDir, text_color=sigColor, text_size=size.normal)
+    table.cell(t, 0, 3, "Modo", text_color=color.gray, text_size=size.small)
+    table.cell(t, 1, 3, plotMode, text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 4, "Entry", text_color=color.gray, text_size=size.small)
+    table.cell(t, 1, 4, finalDir != "AGUARDAR" ? str.tostring(plotEntry, format.mintick) : "—", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 5, "Stop", text_color=color.gray, text_size=size.small)
+    table.cell(t, 1, 5, finalDir != "AGUARDAR" ? str.tostring(plotStop, format.mintick) : "—", text_color=color.red, text_size=size.small)
+    table.cell(t, 0, 6, "TP1 / TP2", text_color=color.gray, text_size=size.small)
+    table.cell(t, 1, 6, finalDir != "AGUARDAR" ? str.tostring(plotTP1, format.mintick) + " / " + str.tostring(plotTP2, format.mintick) : "—", text_color=bullColor, text_size=size.small)
+    table.cell(t, 0, 7, "R:R", text_color=color.gray, text_size=size.small)
+    table.cell(t, 1, 7, finalDir != "AGUARDAR" ? str.tostring(plotRR, "#.##") : "—", text_color=color.white, text_size=size.small)
+    table.cell(t, 0, 8, "Horizonte", text_color=color.gray, text_size=size.small)
+    table.cell(t, 1, 8, str.tostring(hzMin) + "–" + str.tostring(hzMax) + " candles", text_color=color.gray, text_size=size.small)
+
+alertcondition(finalDir == "COMPRA" and finalDir[1] != "COMPRA", title="Fimathe COMPRA", message="Fimathe: possível COMPRA — conferir Entry/Stop/TP no gráfico")
+alertcondition(finalDir == "VENDA" and finalDir[1] != "VENDA", title="Fimathe VENDA", message="Fimathe: possível VENDA — conferir Entry/Stop/TP no gráfico")
+alertcondition(bosBull, title="BOS Alta", message="Fimathe: BOS de alta por fechamento")
+alertcondition(bosBear, title="BOS Baixa", message="Fimathe: BOS de baixa por fechamento")
