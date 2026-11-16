@@ -1,0 +1,252 @@
+// This Pine Script™ code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// FIMATHE SCALPER v1.0 — educacional / backtest
+// Baseado na metodologia Fimathe Market Intelligence
+// NAO e robo de execucao real. Use apenas para simulacao e Strategy Tester.
+
+//@version=6
+strategy(
+     title            = "FIMATHE SCALPER",
+     shorttitle       = "Fimathe Scalper",
+     overlay          = true,
+     initial_capital  = 10000,
+     default_qty_type = strategy.percent_of_equity,
+     default_qty_value = 1,
+     commission_type  = strategy.commission.percent,
+     commission_value = 0.04,
+     slippage         = 2,
+     pyramiding       = 0,
+     process_orders_on_close = true,
+     max_labels_count = 100,
+     max_lines_count  = 100
+)
+
+grpEstrutura = "Estrutura / Pivos"
+leftBars   = input.int(3, "Barras a esquerda (pivo)", minval=1, maxval=8, group=grpEstrutura)
+rightBars  = input.int(3, "Barras a direita (pivo)", minval=1, maxval=8, group=grpEstrutura)
+emaFastLen = input.int(9,  "EMA rapida", minval=2, group=grpEstrutura)
+emaMidLen  = input.int(21, "EMA media",  minval=5, group=grpEstrutura)
+emaSlowLen = input.int(50, "EMA lenta",  minval=10, group=grpEstrutura)
+
+grpFiltros = "Filtros"
+atrLen     = input.int(14, "ATR length", minval=5, group=grpFiltros)
+rsiLen     = input.int(14, "RSI length", minval=5, group=grpFiltros)
+rsiOS      = input.int(30, "RSI oversold", minval=10, maxval=40, group=grpFiltros)
+rsiOB      = input.int(70, "RSI overbought", minval=60, maxval=90, group=grpFiltros)
+useVolume  = input.bool(true, "Usar filtro de volume", group=grpFiltros)
+volMaLen   = input.int(20, "Media de volume", minval=5, group=grpFiltros)
+volMult    = input.float(1.1, "Volume minimo (x media)", minval=0.5, step=0.1, group=grpFiltros)
+
+grpModo = "Modo de agressividade"
+modo = input.string("Equilibrado", "Modo", options=["Conservador", "Equilibrado", "Agressivo"], group=grpModo)
+
+grpRisco = "Gestao de risco"
+riskPct       = input.float(0.5, "Risco por operacao (%)", minval=0.1, maxval=5.0, step=0.1, group=grpRisco)
+atrStopMult   = input.float(1.2, "Stop (x ATR)", minval=0.5, step=0.1, group=grpRisco)
+tp1RR         = input.float(1.5, "Alvo 1 (R:R)", minval=0.5, step=0.1, group=grpRisco)
+tp2RR         = input.float(2.5, "Alvo 2 (R:R)", minval=1.0, step=0.1, group=grpRisco)
+moveBE        = input.bool(true, "Mover stop para entrada apos Alvo 1", group=grpRisco)
+maxTradesDay  = input.int(8, "Max operacoes por dia", minval=1, maxval=50, group=grpRisco)
+maxLossDayPct = input.float(2.0, "Perda maxima diaria (%)", minval=0.5, maxval=10.0, step=0.5, group=grpRisco)
+
+grpVisual = "Visual"
+showSR     = input.bool(true, "Mostrar suporte/resistencia", group=grpVisual)
+showSignals = input.bool(true, "Mostrar sinais no grafico", group=grpVisual)
+showPanel  = input.bool(true, "Mostrar painel", group=grpVisual)
+
+emaFast = ta.ema(close, emaFastLen)
+emaMid  = ta.ema(close, emaMidLen)
+emaSlow = ta.ema(close, emaSlowLen)
+atr     = ta.atr(atrLen)
+rsi     = ta.rsi(close, rsiLen)
+volMa   = ta.sma(volume, volMaLen)
+volOk   = not useVolume or volume > volMa * volMult
+
+plot(emaFast, "EMA 9",  color=color.new(color.teal, 30), linewidth=1)
+plot(emaMid,  "EMA 21", color=color.new(color.orange, 30), linewidth=1)
+plot(emaSlow, "EMA 50", color=color.new(color.red, 40), linewidth=1)
+
+ph = ta.pivothigh(high, leftBars, rightBars)
+pl = ta.pivotlow(low, leftBars, rightBars)
+
+var float lastPH = na
+var float lastPL = na
+var float prevPH = na
+var float prevPL = na
+
+if not na(ph)
+    prevPH := lastPH
+    lastPH := ph
+if not na(pl)
+    prevPL := lastPL
+    lastPL := pl
+
+trendUp   = not na(lastPH) and not na(prevPH) and not na(lastPL) and not na(prevPL) and lastPH > prevPH and lastPL > prevPL
+trendDown = not na(lastPH) and not na(prevPH) and not na(lastPL) and not na(prevPL) and lastPH < prevPH and lastPL < prevPL
+trendName = trendUp ? "ALTA" : trendDown ? "BAIXA" : "LATERAL"
+
+emaBull = emaFast > emaMid and close > emaSlow
+emaBear = emaFast < emaMid and close < emaSlow
+
+bosBuffer = atr * 0.05
+bosBull = not na(lastPH) and close > lastPH + bosBuffer and close[1] <= lastPH + bosBuffer
+bosBear = not na(lastPL) and close < lastPL - bosBuffer and close[1] >= lastPL - bosBuffer
+
+var float bosLevelBull = na
+var float bosLevelBear = na
+var int   bosBarBull   = na
+var int   bosBarBear   = na
+
+if bosBull
+    bosLevelBull := lastPH
+    bosBarBull   := bar_index
+if bosBear
+    bosLevelBear := lastPL
+    bosBarBear   := bar_index
+
+retestWindow = modo == "Agressivo" ? 8 : modo == "Equilibrado" ? 12 : 18
+inRetestBull = not na(bosLevelBull) and not na(bosBarBull) and (bar_index - bosBarBull) <= retestWindow and (bar_index - bosBarBull) >= 1
+inRetestBear = not na(bosLevelBear) and not na(bosBarBear) and (bar_index - bosBarBear) <= retestWindow and (bar_index - bosBarBear) >= 1
+retestTouchBull = inRetestBull and low <= bosLevelBull * 1.001 and close >= bosLevelBull * 0.998
+retestTouchBear = inRetestBear and high >= bosLevelBear * 0.999 and close <= bosLevelBear * 1.002
+contBull = close > open and close > close[1]
+contBear = close < open and close < close[1]
+
+longSetupAggressive = (bosBull or retestTouchBull) and (trendUp or emaBull) and volOk and rsi < rsiOB
+longSetupBalanced = retestTouchBull and contBull and (trendUp or emaBull) and volOk and rsi > rsiOS and rsi < rsiOB
+longSetupConservative = retestTouchBull and contBull and trendUp and emaBull and volOk and rsi > 40 and rsi < rsiOB and close > emaMid
+shortSetupAggressive = (bosBear or retestTouchBear) and (trendDown or emaBear) and volOk and rsi > rsiOS
+shortSetupBalanced = retestTouchBear and contBear and (trendDown or emaBear) and volOk and rsi > rsiOS and rsi < rsiOB
+shortSetupConservative = retestTouchBear and contBear and trendDown and emaBear and volOk and rsi < 60 and rsi > rsiOS and close < emaMid
+
+longSignal  = modo == "Agressivo" ? longSetupAggressive : modo == "Equilibrado" ? longSetupBalanced : longSetupConservative
+shortSignal = modo == "Agressivo" ? shortSetupAggressive : modo == "Equilibrado" ? shortSetupBalanced : shortSetupConservative
+
+newDay = ta.change(time("D")) != 0
+var int   tradesToday = 0
+var float dayStartEquity = na
+var bool  dayBlocked = false
+if newDay or na(dayStartEquity)
+    tradesToday := 0
+    dayStartEquity := strategy.equity
+    dayBlocked := false
+dayPnLpct = not na(dayStartEquity) and dayStartEquity > 0 ? ((strategy.equity - dayStartEquity) / dayStartEquity) * 100.0 : 0.0
+if dayPnLpct <= -maxLossDayPct
+    dayBlocked := true
+canTrade = not dayBlocked and tradesToday < maxTradesDay and strategy.position_size == 0
+
+riskAmount = strategy.equity * (riskPct / 100.0)
+longStop  = close - atr * atrStopMult
+shortStop = close + atr * atrStopMult
+longRiskPerUnit  = close - longStop
+shortRiskPerUnit = shortStop - close
+longQty  = longRiskPerUnit > 0 ? riskAmount / longRiskPerUnit : na
+shortQty = shortRiskPerUnit > 0 ? riskAmount / shortRiskPerUnit : na
+longTP1  = close + longRiskPerUnit * tp1RR
+longTP2  = close + longRiskPerUnit * tp2RR
+shortTP1 = close - shortRiskPerUnit * tp1RR
+shortTP2 = close - shortRiskPerUnit * tp2RR
+
+var float entryPrice = na
+var float stopPrice  = na
+var float tp1Price   = na
+var float tp2Price   = na
+var bool  beMoved    = false
+var string lastSignal = "NENHUM"
+
+if canTrade and longSignal
+    strategy.entry("COMPRA", strategy.long, qty=longQty)
+    entryPrice := close
+    stopPrice  := longStop
+    tp1Price   := longTP1
+    tp2Price   := longTP2
+    beMoved    := false
+    tradesToday += 1
+    lastSignal := "COMPRA"
+    strategy.exit("SAIDA COMPRA", from_entry="COMPRA", stop=stopPrice, limit=tp2Price)
+
+if canTrade and shortSignal
+    strategy.entry("VENDA", strategy.short, qty=shortQty)
+    entryPrice := close
+    stopPrice  := shortStop
+    tp1Price   := shortTP1
+    tp2Price   := shortTP2
+    beMoved    := false
+    tradesToday += 1
+    lastSignal := "VENDA"
+    strategy.exit("SAIDA VENDA", from_entry="VENDA", stop=stopPrice, limit=tp2Price)
+
+if moveBE and strategy.position_size > 0 and not beMoved and not na(tp1Price) and high >= tp1Price
+    stopPrice := entryPrice
+    beMoved   := true
+    strategy.exit("SAIDA COMPRA", from_entry="COMPRA", stop=stopPrice, limit=tp2Price)
+
+if moveBE and strategy.position_size < 0 and not beMoved and not na(tp1Price) and low <= tp1Price
+    stopPrice := entryPrice
+    beMoved   := true
+    strategy.exit("SAIDA VENDA", from_entry="VENDA", stop=stopPrice, limit=tp2Price)
+
+if strategy.position_size == 0 and strategy.position_size[1] != 0
+    entryPrice := na
+    stopPrice  := na
+    tp1Price   := na
+    tp2Price   := na
+    beMoved    := false
+
+plotshape(showSignals and longSignal and canTrade, title="Sinal Compra", style=shape.triangleup, location=location.belowbar, color=color.new(color.teal, 0), size=size.small, text="COMPRA")
+plotshape(showSignals and shortSignal and canTrade, title="Sinal Venda", style=shape.triangledown, location=location.abovebar, color=color.new(color.red, 0), size=size.small, text="VENDA")
+plot(showSR and not na(lastPH) ? lastPH : na, "Resistencia", color=color.new(color.red, 50), style=plot.style_linebr, linewidth=1)
+plot(showSR and not na(lastPL) ? lastPL : na, "Suporte", color=color.new(color.teal, 50), style=plot.style_linebr, linewidth=1)
+plot(strategy.position_size != 0 ? entryPrice : na, "Entrada", color=color.white, style=plot.style_linebr, linewidth=2)
+plot(strategy.position_size != 0 ? stopPrice  : na, "Stop Loss", color=color.red, style=plot.style_linebr, linewidth=2)
+plot(strategy.position_size != 0 ? tp1Price   : na, "Alvo 1", color=color.teal, style=plot.style_linebr, linewidth=1)
+plot(strategy.position_size != 0 ? tp2Price   : na, "Alvo 2", color=color.green, style=plot.style_linebr, linewidth=1)
+
+var table painel = table.new(position.top_right, 2, 16, bgcolor=color.new(#0d1117, 10), border_width=1, border_color=color.new(color.gray, 60))
+if showPanel and barstate.islast
+    winTrades  = strategy.wintrades
+    lossTrades = strategy.losstrades
+    totalTrades = winTrades + lossTrades
+    winRate = totalTrades > 0 ? (winTrades / totalTrades) * 100.0 : 0.0
+    pf = strategy.grossloss != 0 ? math.abs(strategy.grossprofit / strategy.grossloss) : 0.0
+    netPnl = strategy.netprofit
+    posStatus = strategy.position_size > 0 ? "COMPRADO" : strategy.position_size < 0 ? "VENDIDO" : "FORA"
+    table.cell(painel, 0, 0, "FIMATHE SCALPER", text_color=color.white, text_size=size.small)
+    table.cell(painel, 1, 0, "v1.0", text_color=color.gray, text_size=size.small)
+    table.cell(painel, 0, 1, "Ativo", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 1, syminfo.ticker, text_color=color.white, text_size=size.tiny)
+    table.cell(painel, 0, 2, "Temporalidade", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 2, timeframe.period, text_color=color.white, text_size=size.tiny)
+    table.cell(painel, 0, 3, "Modo", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 3, modo, text_color=color.orange, text_size=size.tiny)
+    table.cell(painel, 0, 4, "Tendencia", text_color=color.gray, text_size=size.tiny)
+    tCol = trendUp ? color.teal : trendDown ? color.red : color.orange
+    table.cell(painel, 1, 4, trendName, text_color=tCol, text_size=size.tiny)
+    table.cell(painel, 0, 5, "Ultimo sinal", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 5, lastSignal, text_color=color.white, text_size=size.tiny)
+    table.cell(painel, 0, 6, "Situacao", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 6, posStatus, text_color=posStatus == "FORA" ? color.gray : color.white, text_size=size.tiny)
+    table.cell(painel, 0, 7, "Entrada", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 7, na(entryPrice) ? "\u2014" : str.tostring(entryPrice, format.mintick), text_color=color.white, text_size=size.tiny)
+    table.cell(painel, 0, 8, "Stop Loss", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 8, na(stopPrice) ? "\u2014" : str.tostring(stopPrice, format.mintick), text_color=color.red, text_size=size.tiny)
+    table.cell(painel, 0, 9, "Alvo 1", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 9, na(tp1Price) ? "\u2014" : str.tostring(tp1Price, format.mintick), text_color=color.teal, text_size=size.tiny)
+    table.cell(painel, 0, 10, "Alvo 2", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 10, na(tp2Price) ? "\u2014" : str.tostring(tp2Price, format.mintick), text_color=color.green, text_size=size.tiny)
+    table.cell(painel, 0, 11, "Ops hoje", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 11, str.tostring(tradesToday) + "/" + str.tostring(maxTradesDay), text_color=dayBlocked ? color.red : color.white, text_size=size.tiny)
+    table.cell(painel, 0, 12, "Total ops", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 12, str.tostring(totalTrades), text_color=color.white, text_size=size.tiny)
+    table.cell(painel, 0, 13, "Win / Loss", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 13, str.tostring(winTrades) + " / " + str.tostring(lossTrades), text_color=color.white, text_size=size.tiny)
+    table.cell(painel, 0, 14, "Taxa acerto", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 14, str.tostring(winRate, "#.#") + "%", text_color=winRate >= 50 ? color.teal : color.red, text_size=size.tiny)
+    table.cell(painel, 0, 15, "Profit Factor", text_color=color.gray, text_size=size.tiny)
+    table.cell(painel, 1, 15, str.tostring(pf, "#.##") + " | Liq: " + str.tostring(netPnl, "#.##"), text_color=netPnl >= 0 ? color.teal : color.red, text_size=size.tiny)
+
+if longSignal and canTrade
+    alert("FIMATHE SCALPER | COMPRA | " + syminfo.ticker + " | Preco: " + str.tostring(close), alert.freq_once_per_bar)
+if shortSignal and canTrade
+    alert("FIMATHE SCALPER | VENDA | " + syminfo.ticker + " | Preco: " + str.tostring(close), alert.freq_once_per_bar)
+alertcondition(longSignal and canTrade, title="COMPRA", message="FIMATHE SCALPER: Sinal de COMPRA")
+alertcondition(shortSignal and canTrade, title="VENDA", message="FIMATHE SCALPER: Sinal de VENDA")
